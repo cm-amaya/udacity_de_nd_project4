@@ -50,9 +50,7 @@ def process_song_data(spark: SparkSession, input_data: str,
                   'artist_id',
                   'year',
                   'duration']
-    
     songs_table = df.select(*songs_cols).dropDuplicates()
-    
     # write songs table to parquet files partitioned by year and artist
     songs_table.write.partitionBy("year", "artist_id") \
         .parquet(os.path.join(output_data,
@@ -66,7 +64,6 @@ def process_song_data(spark: SparkSession, input_data: str,
                     'artist_latitude',
                     'artist_longitude']
     artists_table = df.select(*artists_cols).dropDuplicates()
-    
     # write artists table to parquet files
     artists_table.write.parquet(os.path.join(output_data,
                                              'artists',
@@ -99,11 +96,11 @@ def process_log_data(spark, input_data, output_data):
     users_table.write.parquet(os.path.join(output_data,
                                            'users', 'users.parquet'))
     # create timestamp column from original timestamp column
-    get_timestamp = udf(lambda ts: str(int(int(ts)/1000)))
+    get_timestamp = udf(lambda ts: int(int(ts)/1000))
     df = df.withColumn('timestamp', get_timestamp(df.ts))
     # create datetime column from original timestamp column
-    get_datetime = udf(lambda ts: str(datetime.fromtimestamp(
-        int(int(ts)/1000))))
+    get_datetime = udf(lambda ts: datetime.fromtimestamp(
+        int(int(ts)/1000)))
     df = df.withColumn('datetime', get_datetime(df.ts))
     # extract columns to create time table
     time_table = df.select('datetime').withColumn('start_time', df.timestamp)\
@@ -149,7 +146,7 @@ def process_log_data(spark, input_data, output_data):
         if old_col != new_col:
             songplays_table = songplays_table.withColumnRenamed(old_col,
                                                                 new_col)
-    songplays_table.withColumn('songplay', monotonically_increasing_id()+1)     
+    songplays_table.withColumn('songplay', monotonically_increasing_id()+1)  
     # write songplays table to parquet files partitioned by year and month
     songplays_table.write.partitionBy("year", "month")\
         .parquet(os.path.join(output_data,
