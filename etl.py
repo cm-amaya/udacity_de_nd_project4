@@ -52,7 +52,7 @@ def process_song_data(spark: SparkSession, input_data: str,
                   'duration']
     songs_table = df.select(*songs_cols).dropDuplicates()
     # write songs table to parquet files partitioned by year and artist
-    songs_table.write.partitionBy("year", "artist_id") \
+    songs_table.write.partitionBy("year", "artist_id")\
         .parquet(os.path.join(output_data,
                               'songs',
                               'songs.parquet'), 'overwrite')
@@ -96,21 +96,22 @@ def process_log_data(spark, input_data, output_data):
     users_table.write.parquet(os.path.join(output_data,
                                            'users', 'users.parquet'))
     # create timestamp column from original timestamp column
-    get_timestamp = udf(lambda ts: int(int(ts)/1000))
+    get_timestamp = udf(lambda ts: str(int(int(ts)/1000)))
     df = df.withColumn('timestamp', get_timestamp(df.ts))
     # create datetime column from original timestamp column
-    get_datetime = udf(lambda ts: datetime.fromtimestamp(
-        int(int(ts)/1000)))
+    get_datetime = udf(lambda ts: str(datetime.fromtimestamp(
+        int(int(ts)/1000))))
     df = df.withColumn('datetime', get_datetime(df.ts))
     # extract columns to create time table
-    time_table = df.select('datetime').withColumn('start_time', df.timestamp)\
-        .withColumn('hour', hour('datetime'))\
-        .withColumn('day', dayofmonth('datetime'))\
-        .withColumn('week', weekofyear('datetime'))\
-        .withColumn('month', month('datetime'))\
-        .withColumn('year', year('datetime'))\
-        .withColumn('weekday', dayofweek('datetime'))\
+    time_table = df.select('timestamp').withColumn('start_time', df.timestamp)\
+        .withColumn('hour', hour('timestamp'))\
+        .withColumn('day', dayofmonth('timestamp'))\
+        .withColumn('week', weekofyear('timestamp'))\
+        .withColumn('month', month('timestamp'))\
+        .withColumn('year', year('timestamp'))\
+        .withColumn('weekday', dayofweek('timestamp'))\
         .dropDuplicates()
+    time_table = time_table.drop('timestamp')
     # write time table to parquet files partitioned by year and month
     time_table.write.partitionBy("year", "month").\
         parquet(os.path.join(output_data, 'time', 'time.parquet'))
