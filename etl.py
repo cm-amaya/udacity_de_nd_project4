@@ -124,6 +124,8 @@ def process_log_data(spark, input_data, output_data):
     df_join = df.join(song_df,
                       (df.artist == song_df.artist_name) &
                       (df.song == song_df.title), 'inner')
+    df_join = df_join.withColumn('month', month('timestamp'))\
+        .withColumn('year', year('timestamp'))
     songplays_select_cols = ['timestamp',
                              'userId',
                              'level',
@@ -141,13 +143,13 @@ def process_log_data(spark, input_data, output_data):
                       'location',
                       'user_agent',
                       'year',
-                      'month']    
+                      'month']
     songplays_table = df_join.select(songplays_select_cols)
     for old_col, new_col in zip(songplays_select_cols, songplays_cols):
         if old_col != new_col:
             songplays_table = songplays_table.withColumnRenamed(old_col,
                                                                 new_col)
-    songplays_table.withColumn('songplay', monotonically_increasing_id()+1)  
+    songplays_table.withColumn('songplay_id', monotonically_increasing_id()+1)  
     # write songplays table to parquet files partitioned by year and month
     songplays_table.write.partitionBy("year", "month")\
         .parquet(os.path.join(output_data,
